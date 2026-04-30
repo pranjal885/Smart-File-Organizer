@@ -8,7 +8,6 @@ import collections
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 
 from google_auth_oauthlib.flow import Flow
 
@@ -68,9 +67,7 @@ app = FastAPI(title="Smart File Organizer Dashboard")
 
 # 🔥 FINAL CORRECT TEMPLATE PATH
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-templates = Jinja2Templates(
-    directory=os.path.join(BASE_DIR, "backend", "templates")
-)
+
 
 
 # =======================
@@ -86,12 +83,11 @@ async def startup_event():
 # =======================
 # HOME
 # =======================
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    return templates.TemplateResponse(
-        "index.html",
-        {"request": request}
-    )
+from fastapi.responses import FileResponse
+
+@app.get("/")
+async def index():
+    return FileResponse("backend/static/index.html")
 
 
 # =======================

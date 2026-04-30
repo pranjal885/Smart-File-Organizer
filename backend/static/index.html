@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart File Organizer</title>
+</head>
+<body>
+
+<h1>Smart File Organizer 🚀</h1>
+
+<button onclick="login()">Login with Google</button>
+<button onclick="start()">Start System</button>
+
+<h3>Status:</h3>
+<p id="status">Loading...</p>
+
+<h3>Logs:</h3>
+<div id="logs"></div>
+
+<script>
+const baseURL = "";
+
+function login() {
+    window.location.href = baseURL + "/login";
+}
+
+async function start() {
+    const res = await fetch(baseURL + "/api/start", { method: "POST" });
+    const data = await res.json();
+    alert(JSON.stringify(data));
+}
+
+async function getStatus() {
+    const res = await fetch(baseURL + "/api/status");
+    const data = await res.json();
+    document.getElementById("status").innerText =
+        data.logged_in ? "Logged In ✅" : "Not Logged In ❌";
+}
+
+async function getLogs() {
+    const res = await fetch(baseURL + "/api/logs");
+    const data = await res.json();
+
+    let html = "";
+    data.logs.forEach(log => {
+        html += "<p>" + log + "</p>";
+    });
+
+    document.getElementById("logs").innerHTML = html;
+}
+
+// auto refresh
+setInterval(() => {
+    getStatus();
+    getLogs();
+}, 2000);
+</script>
+
+</body>
+</html>
