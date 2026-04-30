@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+
+# Environment & secrets
+.env
+credentials.json
+
+# Database
+*.db
+
+# Generated folders
+Duplicates/
+Documents/
+Images/
+Videos/
+Reports/
+Spreadsheets/
+Archive/
+Code/
+Flagged/
+Staging/
+
+# OS files
+.DS_Store
+
+
+testdrive.py

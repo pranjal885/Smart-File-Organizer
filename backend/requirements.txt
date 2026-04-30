@@ -1,0 +1,16 @@
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+PyPDF2
+Pillow
+python-docx
+google-generativeai
+google-cloud-vision
+spacy
+python-dotenv
+SQLAlchemy
+pydantic
+# SpaCy model download is also required: python -m spacy download en_core_web_sm
+fastapi
+uvicorn
+jinja2
