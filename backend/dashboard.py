@@ -87,7 +87,9 @@ from fastapi.responses import FileResponse
 
 @app.get("/")
 async def index():
-    return FileResponse("backend/static/index.html")
+     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+     file_path = os.path.join(BASE_DIR, "static", "index.html")
+     return FileResponse(file_path)
 
 
 # =======================
