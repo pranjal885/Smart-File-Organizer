@@ -1,10 +1,10 @@
 import os
+import json
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 import asyncio
 import sys
 import collections
-import glob
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -31,7 +31,10 @@ from core.state import system_state
 # OAUTH CONFIG
 # =======================
 SCOPES = ["https://www.googleapis.com/auth/drive"]
-REDIRECT_URI = "http://localhost:8000/auth/callback"
+
+# ✅ AUTO DETECT RENDER URL
+BASE_URL = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
+REDIRECT_URI = f"{BASE_URL}/auth/callback"
 
 oauth_flow = None
 
@@ -64,7 +67,6 @@ log_catcher = LogCatcher()
 # =======================
 app = FastAPI(title="Smart File Organizer Dashboard")
 
-os.makedirs("templates", exist_ok=True)
 templates = Jinja2Templates(directory="templates")
 
 
@@ -84,19 +86,24 @@ async def startup_event():
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(
-        request,
         "index.html",
-        {}
+        {"request": request}
     )
+
+
 # =======================
-# LOGIN
+# LOGIN (UPDATED)
 # =======================
 @app.get("/login")
 def login():
     global oauth_flow
 
-    oauth_flow = Flow.from_client_secrets_file(
-        "credentials.json",
+    # ✅ GET CREDENTIALS FROM ENV
+    creds_json = os.getenv("GOOGLE_CREDENTIALS")
+    creds_dict = json.loads(creds_json)
+
+    oauth_flow = Flow.from_client_config(
+        creds_dict,
         scopes=SCOPES,
         redirect_uri=REDIRECT_URI
     )
@@ -106,20 +113,18 @@ def login():
         access_type="offline"
     )
 
-    # 🔥 STORE STATE (FIX)
     system_state["oauth_state"] = state
 
     return RedirectResponse(auth_url)
 
 
 # =======================
-# CALLBACK (FIXED)
+# CALLBACK
 # =======================
 @app.get("/auth/callback")
 def callback(request: Request):
     global oauth_flow
 
-    # 🔥 VALIDATE STATE
     incoming_state = request.query_params.get("state")
 
     if incoming_state != system_state.get("oauth_state"):
@@ -228,7 +233,7 @@ async def get_stats():
 
 
 # =======================
-# FILES (RESULT VIEW)
+# FILES
 # =======================
 @app.get("/api/files")
 async def get_files():

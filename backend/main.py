@@ -10,11 +10,8 @@ def open_browser():
     print("Opening browser at http://127.0.0.1:8000 ...")
     webbrowser.open("http://127.0.0.1:8000/login")
 
+import uvicorn
+
 if __name__ == "__main__":
-    print("Initializing Smart File Organizer Dashboard Launcher...")
-    # Start browser launcher in background
-    threading.Thread(target=open_browser, daemon=True).start()
-    
-    # Run the FastAPI app via Uvicorn
-    # reload=False is required because we are keeping state in memory
-    uvicorn.run("dashboard:app", host="127.0.0.1", port=8000, reload=False)
+    print("Starting Smart File Organizer...")
+    uvicorn.run("dashboard:app", host="0.0.0.0", port=10000)
