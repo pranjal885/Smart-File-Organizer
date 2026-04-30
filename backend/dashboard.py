@@ -66,9 +66,11 @@ log_catcher = LogCatcher()
 # =======================
 app = FastAPI(title="Smart File Organizer Dashboard")
 
-# ✅ FIXED TEMPLATE PATH (IMPORTANT)
+# 🔥 FINAL CORRECT TEMPLATE PATH
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+templates = Jinja2Templates(
+    directory=os.path.join(BASE_DIR, "backend", "templates")
+)
 
 
 # =======================
