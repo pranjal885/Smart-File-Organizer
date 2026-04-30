@@ -67,7 +67,7 @@ log_catcher = LogCatcher()
 # =======================
 app = FastAPI(title="Smart File Organizer Dashboard")
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="backend/templates")
 
 
 # =======================
