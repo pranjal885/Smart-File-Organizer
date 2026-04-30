@@ -13,7 +13,7 @@ from fastapi.templating import Jinja2Templates
 from google_auth_oauthlib.flow import Flow
 
 from core.database import SessionLocal, FileRecord
-from core.config import OUTPUT_DIRS, init_directories
+from core.config import init_directories
 from core.database import init_db
 from core.message_bus import MessageBus
 
@@ -32,7 +32,6 @@ from core.state import system_state
 # =======================
 SCOPES = ["https://www.googleapis.com/auth/drive"]
 
-# ✅ AUTO DETECT RENDER URL
 BASE_URL = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
 REDIRECT_URI = f"{BASE_URL}/auth/callback"
 
@@ -67,7 +66,9 @@ log_catcher = LogCatcher()
 # =======================
 app = FastAPI(title="Smart File Organizer Dashboard")
 
-templates = Jinja2Templates(directory="backend/templates")
+# ✅ FIXED TEMPLATE PATH (IMPORTANT)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 
 # =======================
@@ -92,14 +93,17 @@ async def index(request: Request):
 
 
 # =======================
-# LOGIN (UPDATED)
+# LOGIN
 # =======================
 @app.get("/login")
 def login():
     global oauth_flow
 
-    # ✅ GET CREDENTIALS FROM ENV
     creds_json = os.getenv("GOOGLE_CREDENTIALS")
+
+    if not creds_json:
+        return {"error": "GOOGLE_CREDENTIALS not set"}
+
     creds_dict = json.loads(creds_json)
 
     oauth_flow = Flow.from_client_config(
