@@ -1,5 +1,7 @@
 # 🚀 Smart File Organizer (AI + Multi-Agent System)
 
+🌐 **Live Demo:** https://smart-file-organizer-0ur0.onrender.com  
+
 A scalable and intelligent system that automatically organizes Google Drive files using a multi-agent architecture, SHA-256 based duplicate detection, and a real-time streaming pipeline.
 
 ---
