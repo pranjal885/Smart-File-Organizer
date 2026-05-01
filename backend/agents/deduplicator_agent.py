@@ -21,45 +21,52 @@ class DeduplicatorAgent(BaseAgent):
             self.nlp = None
 
     async def process(self, message):
-        # ✅ FIX: use object attributes
         file_name = message.file_name
         content = message.content
 
         print(f"[{self.name}] Deduplicating {file_name}")
 
+        # ❗ If no content, skip
         if content is None:
             print(f"[{self.name}] No content found.")
+            message.is_duplicate = False
             await self.bus.publish(QUEUE_ARCHIVE, message)
             return
 
-        # ✅ Hash content
+        # 🔥 Compute SHA256 hash
         file_hash = self._hash_content(content)
         message.file_hash = file_hash
 
         db: Session = SessionLocal()
 
         try:
-            exact_match = db.query(FileRecord).filter(
+            # 🔍 Check if same hash already exists
+            existing = db.query(FileRecord).filter(
                 FileRecord.file_hash == file_hash
             ).first()
 
-            if exact_match:
+            if existing:
                 print(
                     f"[{self.name}] Duplicate found: "
-                    f"{file_name} → {exact_match.file_name}"
+                    f"{file_name} → {existing.file_name}"
                 )
 
                 message.is_duplicate = True
-                message.duplicate_of = exact_match.file_id
+                message.duplicate_of = existing.file_id
                 message.category = "Duplicates"
+
+            else:
+                # ✅ Important: explicitly mark non-duplicate
+                message.is_duplicate = False
 
         except Exception as e:
             print(f"[{self.name}] DB error: {e}")
+            message.is_duplicate = False
 
         finally:
             db.close()
 
-        # ✅ Send forward
+        # ➡️ Send to next stage
         await self.bus.publish(QUEUE_ARCHIVE, message)
 
     def _hash_content(self, content: bytes) -> str:
