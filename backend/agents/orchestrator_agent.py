@@ -30,52 +30,54 @@ class OrchestratorAgent(BaseAgent):
 
         print(f"[{self.name}] Finalizing {file_name} -> {category}")
 
+        # 🔥 GOOGLE DRIVE LOGIC
         if getattr(message, "source", "drive") == "drive":
-            # 🔥 GOOGLE DRIVE LOGIC
             creds = system_state.get("credentials")
 
             if creds:
                 try:
                     service = build("drive", "v3", credentials=creds)
 
-                    # ✅ FIXED CONDITION
                     if message.is_duplicate and message.file_id:
                         self.move_duplicate_to_folder(service, message.file_id, "Duplicates")
                         print(f"[{self.name}] Moved {file_name} to Duplicates folder")
 
                 except Exception as e:
                     print(f"[{self.name}] Drive error: {e}")
+
+        # 🔥 LOCAL FILE LOGIC
         elif getattr(message, "source", "drive") == "local":
             import shutil
             try:
                 if message.is_duplicate and message.file_id:
                     dup_dir = OUTPUT_DIRS.get("Duplicates", "Duplicates")
-                    # If duplicate file with same name exists, it will overwrite it which is fine
                     target_path = os.path.join(dup_dir, file_name)
                     shutil.move(message.file_id, target_path)
-                    print(f"[{self.name}] Moved {file_name} to local Duplicates folder: {target_path}")
+                    print(f"[{self.name}] Moved {file_name} to local Duplicates folder")
             except Exception as e:
                 print(f"[{self.name}] Local Move Error: {e}")
 
-        # ✅ SAVE TO DATABASE (DO NOT TOUCH)
+        # ✅ SAVE TO DATABASE (FULL FIX)
         db: Session = SessionLocal()
 
         try:
             record = FileRecord(
                 file_id=message.file_id,
                 file_name=file_name,
-                file_hash=message.file_hash,
+                file_hash=getattr(message, "file_hash", None),
                 category=category,
                 tags=",".join(message.tags or []),
                 original_path="Google Drive",
-                current_path="Cloud",
-                is_duplicate=message.is_duplicate,
-                duplicate_of=message.duplicate_of,
-                is_archived=message.should_archive
+                current_path="Duplicates" if message.is_duplicate else "Main",
+                is_duplicate=bool(message.is_duplicate),  # 🔥 FORCE TRUE/FALSE
+                duplicate_of=getattr(message, "duplicate_of", None),
+                is_archived=False  # 🔥 FIXED
             )
 
             db.add(record)
             db.commit()
+
+            print(f"[{self.name}] Saved to DB | Duplicate: {record.is_duplicate}")
 
         except Exception as e:
             print(f"[{self.name}] DB error: {e}")
@@ -86,7 +88,6 @@ class OrchestratorAgent(BaseAgent):
     # 🔥 MOVE FILE TO DRIVE FOLDER
     def move_duplicate_to_folder(self, service, file_id, folder_name="Duplicates"):
         try:
-            # 1️⃣ Check if folder exists
             results = service.files().list(
                 q=f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false",
                 fields="files(id, name)"
@@ -94,7 +95,6 @@ class OrchestratorAgent(BaseAgent):
 
             folders = results.get("files", [])
 
-            # 2️⃣ Create if not exists
             if folders:
                 folder_id = folders[0]["id"]
             else:
@@ -110,7 +110,6 @@ class OrchestratorAgent(BaseAgent):
 
                 folder_id = folder["id"]
 
-            # 3️⃣ Get current parents
             file = service.files().get(
                 fileId=file_id,
                 fields="parents"
@@ -119,7 +118,6 @@ class OrchestratorAgent(BaseAgent):
             parents = file.get("parents", [])
             previous_parents = ",".join(parents) if parents else None
 
-            # 4️⃣ Move file
             service.files().update(
                 fileId=file_id,
                 addParents=folder_id,
