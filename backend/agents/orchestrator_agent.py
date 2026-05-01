@@ -29,6 +29,7 @@ class OrchestratorAgent(BaseAgent):
         category = message.category
 
         print(f"[{self.name}] Finalizing {file_name} -> {category}")
+        print(f"[DEBUG] Saving file: {file_name}")
 
         # 🔥 GOOGLE DRIVE LOGIC
         if getattr(message, "source", "drive") == "drive":
@@ -76,6 +77,8 @@ class OrchestratorAgent(BaseAgent):
 
             db.add(record)
             db.commit()
+            total = db.query(FileRecord).count()
+            print(f"[DEBUG] Total records in DB: {total}")
 
             print(f"[{self.name}] Saved to DB | Duplicate: {record.is_duplicate}")
 
