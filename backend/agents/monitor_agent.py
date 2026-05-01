@@ -24,14 +24,28 @@ class MonitorAgent:
             try:
                 service = build("drive", "v3", credentials=creds)
 
-                results = service.files().list(
-                    pageSize=20,
-                    fields="files(id, name, mimeType)"
-                ).execute()
+                all_files = []
+                page_token = None
 
-                files = results.get("files", [])
+                # 🔥 FETCH ALL FILES (PAGINATION)
+                while True:
+                    response = service.files().list(
+                        pageSize=100,
+                        fields="nextPageToken, files(id, name, mimeType)",
+                        pageToken=page_token
+                    ).execute()
 
-                for file in files:
+                    files = response.get("files", [])
+                    all_files.extend(files)
+
+                    page_token = response.get("nextPageToken")
+
+                    if not page_token:
+                        break
+
+                print(f"[MonitorAgent] Total files fetched: {len(all_files)}")
+
+                for file in all_files:
                     file_id = file.get("id")
                     file_name = file.get("name")
                     mime_type = file.get("mimeType")
@@ -40,11 +54,11 @@ class MonitorAgent:
                     if not file_id or not file_name or not mime_type:
                         continue
 
-                    # 🚨 CRITICAL FIX 1: Skip folders & Google Docs
+                    # 🚨 Skip folders & Google Docs
                     if mime_type.startswith("application/vnd.google-apps"):
                         continue
 
-                    # 🚨 CRITICAL FIX 2: Avoid duplicates
+                    # 🚨 Avoid re-processing same file
                     if file_id in self.seen_files:
                         continue
 
